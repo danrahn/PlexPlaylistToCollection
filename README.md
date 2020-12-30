@@ -4,7 +4,7 @@ This script imports an existing playlist to a new or existing collection.
 
 ## Usage
 
-`python PlexPlaylistFromKeywords.py [args]`
+`python PlexPlaylistToCollection.py [args]`
 
 ## Requirements
 

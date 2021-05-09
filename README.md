@@ -23,7 +23,3 @@ host | `--host` | The host of the Plex server. Defaults to http://localhost:3240
 section | `-s`, `--section` | The id of the library section to add the collection to.
 playlist | `-p`, `--playlist` | The name of the playlist to pull items from
 collection | `-c`, `--collection` | The name of the collection to create/add to
-
-## Issues
-
-It doesn't look like TV episodes can be added to collections, so best to stick with movie collections for now.

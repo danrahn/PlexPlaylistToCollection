@@ -34,30 +34,39 @@ class PlaylistToCollection:
         parser.add_argument('-s', '--section')
         parser.add_argument('-c', '--collection')
         self.cmd_args = parser.parse_args()
-        self.token = self.get_config_value(config, 'token')
+        self.token = self.get_config_value(config, 'token', prompt='Enter your Plex token')
         self.host = self.get_config_value(config, 'host', 'http://localhost:32400')
-        self.section_id = self.get_config_value(config, 'section')
-        self.playlist_name = self.get_config_value(config, 'playlist')
-        self.collection_name = self.get_config_value(config, 'collection')
+        self.section_id = self.get_config_value(config, 'section', default=None)
+        if self.section_id.isnumeric():
+            self.section_id = int(self.section_id)
+        self.playlist_name = self.get_config_value(config, 'playlist', default=None)
+        self.collection_name = self.get_config_value(config, 'collection', default=None)
         self.valid = True
 
-
-    def get_config_value(self, config, key, default=''):
-        """Returns a value from the given config, or the default value if not present"""
+    def get_config_value(self, config, key, default='', prompt=''):
+        cmd_arg = None
+        if key in self.cmd_args:
+            cmd_arg = self.cmd_args.__dict__[key]
 
         if key in config and config[key] != None:
-            if key in self.cmd_args:
-                value = self.cmd_args.__dict__[key]
-                if value != None:
-                    # Command-line args shadow config file
-                    print(f'WARN: Duplicate argument "{key}" found in both command-line arguments and config file. Using command-line value ("{self.cmd_args.__dict__[key]}")')
-                    return self.cmd_args.__dict__[key]
+            if cmd_arg != None:
+                # Command-line args shadow config file
+                print(f'WARN: Duplicate argument "{key}" found in both command-line arguments and config file. Using command-line value ("{self.cmd_args.__dict__[key]}")')
+                return cmd_arg
             return config[key]
 
-        if len(default) != 0:
-            print(f'{key} not found in config or command line arguments, defaulting to "{default}"')
+        if cmd_arg != None:
+            return cmd_arg
 
-        return default
+        if default == None:
+            return ''
+
+        if len(default) != 0:
+            return default
+
+        if len(prompt) == 0:
+            return input(f'\nCould not find "{key}" and no default is available.\n\nPlease enter a value for "{key}": ')
+        return input(f'\n{prompt}: ')
 
 
     def run(self):
@@ -144,7 +153,7 @@ class PlaylistToCollection:
         while not choice.isnumeric() or int(choice) < 1 or int(choice) > len(items):
             if choice == '-1':
                 return None
-            elif choice[0].lower() == 'l':
+            elif choice[0].lower() == 'l' and len(choice) > 1:
                 choice = choice[1:]
                 if choice.isnumeric() and int(choice) > 0 and int(choice) <= len(items):
                     self.print_playlist_items(items[int(choice) - 1])
@@ -192,7 +201,7 @@ class PlaylistToCollection:
 
             print(f'Provided library section {find} could not be found...\n')
 
-        print('Available Libraries:\n')
+        print('\nChoose a library to add the collection to.\nNOTE: Only playlist items part of the chosen library will be added to the collection.\n\nAvailable Libraries:\n')
         choices = {}
         for section in sections:
             print(f'[{section["key"]}] {section["title"]}')

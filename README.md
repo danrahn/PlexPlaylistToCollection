@@ -22,7 +22,7 @@ If the arguments are not found in the command line, it will look in config.yml. 
 
 Value | Command line | config.yaml |Description
 ---|---|---|---
-token | `-t`, `--token` | `token` | Your Plex token.
+token | `-t`, `--token` | `token` | Your Plex token (see [finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 host | `--host` | `host` | The host of the Plex server. Defaults to http://localhost:32400.
 section | `-s`, `--section` | `section` | The id of the library section to add the collection to.
 playlist | `-p`, `--playlist` | `playlist` | The name of the playlist to pull items from

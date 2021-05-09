@@ -3,7 +3,9 @@ import os
 import argparse
 import requests
 import time
-import urllib
+from urllib import parse
+# import urllib
+import urllib3
 import yaml
 import json
 
@@ -81,6 +83,9 @@ class PlaylistToCollection:
             self.token = input('Enter your Plex token: ')
             print('Plex token set!\n')
 
+        if not self.test_plex_connection():
+            return
+
         playlist = self.find_playlist()
         if not playlist:
             print('Unable to find the right playlist, exiting...')
@@ -101,6 +106,32 @@ class PlaylistToCollection:
             print('Unable to add items to collection, exiting...')
 
         print('\nDone!')
+
+
+    def test_plex_connection(self):
+        """
+        Does some basic validation to ensure we get a valid response from Plex with the given
+        host and token.
+        """
+
+        status = None
+        try:
+            status = requests.get(self.url('/')).status_code
+        except requests.exceptions.ConnectionError:
+            print(f'Unable to connect to {self.host} ({sys.exc_info()[0].__name__}), exiting...')
+            return False
+        except:
+            print(f'Something went wrong when connecting to Plex ({sys.exc_info()[0].__name__}), exiting...')
+            return False
+
+        if status == 200:
+            return True
+
+        if status == 401 or status == 403:
+            print('Could not connect to Plex with the provided token, exiting...')
+        else:
+            print(f'Bad response from Plex ({status}), exiting...')
+        return False
 
 
     def find_playlist(self):
@@ -308,13 +339,16 @@ class PlaylistToCollection:
     def get_json_response(self, url, params={}):
         """Returns the JSON response from the given URL"""
         response = requests.get(self.url(url, params), headers={ 'Accept' : 'application/json' })
-        try:
-            data = json.loads(response.content)['MediaContainer']
-        except:
-            print('ERROR: Unexpected JSON response:\n')
-            print(response.content)
-            print()
+        if response.status_code != 200:
             data = None
+        else:
+            try:
+                data = json.loads(response.content)['MediaContainer']
+            except:
+                print('ERROR: Unexpected JSON response:\n')
+                print(response.content)
+                print()
+                data = None
 
         response.close()
         return data
@@ -324,7 +358,7 @@ class PlaylistToCollection:
         real_url = f'{self.host}{base}'
         sep = '?'
         for key, value in params.items():
-            real_url += f'{sep}{key}={urllib.parse.quote(value)}'
+            real_url += f'{sep}{key}={parse.quote(value)}'
             sep = '&'
 
         return f'{real_url}{sep}X-Plex-Token={self.token}'

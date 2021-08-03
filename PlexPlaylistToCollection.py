@@ -142,6 +142,13 @@ class PlaylistToCollection:
 
         playlists = self.get_json_response('/playlists', { 'playlistType' : 'video' })
         if not playlists:
+            print('Could not get playlists from server.')
+            return None
+        if 'size' not in playlists or playlists['size'] == 0:
+            print('No playlists found.')
+            return None
+        if 'Metadata' not in playlists:
+            print('Error reading playlists from server.')
             return None
 
         matches = []
@@ -163,8 +170,9 @@ class PlaylistToCollection:
                     return None
 
             ret = self.select_playlist(playlists['Metadata'], lambda x: x['title'])
-            self.playlist_name = ret['title']
-            print(f'\nSelected {self.playlist_name}\n')
+            if ret:
+                self.playlist_name = ret['title']
+                print(f'\nSelected {self.playlist_name}\n')
             return ret
 
         print('Multiple matching playlists found:\n')

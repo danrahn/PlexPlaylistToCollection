@@ -4,10 +4,11 @@ Import an existing playlist to a new or existing collection.
 
 ## Requirements
 
-Requirements are outlined in requirements.txt, and can be installed via `pip install -r requirements.txt`
+[Python 3.10](https://www.python.org/downloads/) or later.
+
+Python package requirements are outlined in requirements.txt, and can be installed via `pip install -r requirements.txt`
 
 ## Usage
-
 `python PlexPlaylistToCollection.py [args]`
 
 ### Arguments
@@ -27,6 +28,7 @@ host | `--host` | `host` | The host of the Plex server. Defaults to http://local
 section | `-s`, `--section` | `section` | The id of the library section to add the collection to.
 playlist | `-p`, `--playlist` | `playlist` | The name of the playlist to pull items from
 collection | `-c`, `--collection` | `collection` | The name of the collection to create/add to
+filter-to  | `--filter-to` | `filter_to` | Optionally filter existing playlists based on their type. Can either be `video` or `audio`.
 
 <br>
 

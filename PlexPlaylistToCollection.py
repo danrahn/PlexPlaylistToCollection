@@ -4,8 +4,6 @@ import argparse
 import requests
 import time
 from urllib import parse
-# import urllib
-import urllib3
 import yaml
 import json
 
@@ -35,6 +33,7 @@ class PlaylistToCollection:
         parser.add_argument('-p', '--playlist')
         parser.add_argument('-s', '--section')
         parser.add_argument('-c', '--collection')
+        parser.add_argument('--filter-to', choices=['audio', 'video'], help='Filter playlist options to audio or video types')
         self.cmd_args = parser.parse_args()
         self.token = self.get_config_value(config, 'token', prompt='Enter your Plex token')
         self.host = self.get_config_value(config, 'host', 'http://localhost:32400')
@@ -43,6 +42,7 @@ class PlaylistToCollection:
             self.section_id = int(self.section_id)
         self.playlist_name = self.get_config_value(config, 'playlist', default=None)
         self.collection_name = self.get_config_value(config, 'collection', default=None)
+        self.filter_to = self.get_config_value(config, 'filter_to', default=None)
         self.valid = True
 
     def get_config_value(self, config, key, default='', prompt=''):
@@ -140,7 +140,7 @@ class PlaylistToCollection:
         If the playlist does not exist, or none was provided, ask the user to select one
         """
 
-        playlists = self.get_json_response('/playlists', { 'playlistType' : 'video' })
+        playlists = self.get_json_response('/playlists', { } if len(self.filter_to) == 0 else { 'playlistType' : self.filter_to })
         if not playlists:
             print('Could not get playlists from server.')
             return None
@@ -192,14 +192,16 @@ class PlaylistToCollection:
         while not choice.isnumeric() or int(choice) < 1 or int(choice) > len(items):
             if choice == '-1':
                 return None
-            elif choice[0].lower() == 'l' and len(choice) > 1:
-                choice = choice[1:]
-                if choice.isnumeric() and int(choice) > 0 and int(choice) <= len(items):
-                    self.print_playlist_items(items[int(choice) - 1])
-                    print()
-                    for i in range(len(items)):
-                        print(f'[{i + 1}] {display_fn(items[i])}')
-                    choice = input(f'\nSelect a playlist (-1 to cancel, prepend \'L\' to list the items in the playlist): ')
+            elif choice[0].lower() == 'l':
+                if len(choice) == 1:
+                        for i in range(len(items)):
+                            print(f'[{i + 1}] {display_fn(items[i])}')
+                else:
+                    choice = choice[1:]
+                    if choice.isnumeric() and int(choice) > 0 and int(choice) <= len(items):
+                        self.print_playlist_items(items[int(choice) - 1])
+                        print()
+                choice = input(f'\nSelect a playlist (-1 to cancel, L to list again, prepend \'L\' to list the items in the playlist): ')
             else:
                 choice = input('Invalid number, please try again (-1 to cancel): ')
 
@@ -220,7 +222,13 @@ class PlaylistToCollection:
             return
 
         for item in playlist_items['Metadata']:
-            print(f'\t{item["title"]}')
+            match item['type']:
+                case 'episode':
+                    print(f'\t{item["grandparentTitle"]} - S{("0" if item["parentIndex"] < 10 else "") + str(item["parentIndex"])}E{("0" if item["index"] < 10 else "") + str(item["index"]) } - {item["title"]}')
+                case 'track':
+                    print(f'\t{item["title"]} - {item["grandparentTitle"]} ({item["parentTitle"]})')
+                case _:
+                    print(f'\t{item["title"]}')
         print()
 
 
@@ -331,7 +339,7 @@ class PlaylistToCollection:
         key = item['key']
         metadata_id = key[key.rfind('/') + 1:]
         base = f'/library/sections/{self.section_id}/all'
-        type_to_int = { 'movie' : '1', 'show' : '2', 'season' : '3', 'episode' : '4' }
+        type_to_int = { 'movie' : '1', 'show' : '2', 'season' : '3', 'episode' : '4', 'artist' : '8', 'album' : '9', 'track' : '10' }
         if item['type'] not in type_to_int:
             return False
         params = { 'type' : type_to_int[item['type']], 'id' : metadata_id }
